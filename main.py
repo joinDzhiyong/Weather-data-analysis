@@ -28,15 +28,36 @@ res = {}
 for key, value in map1_table1_mean_mean.items():
     res[key] = (mean_by_year_mean[cols[value]], None)
 
+def get_dates(i, value):
+    _raw = od1[od1.iloc[:, i] == value]
+    dates = []
+    for i in range(len(_raw.index)):
+        year, mon, day = _raw.iloc[i, 1], _raw.iloc[i, 2], _raw.iloc[i, 3]
+        date = "{}年{}月{}日".format(year, mon, day)
+        dates.append(date)
+    if len(dates) > 1:
+        return dates
+    elif len(dates) == 1:
+        return dates.pop()
+    else:
+        return None
+
+
 res["多年平均年降水量"] = (od1.groupby(cols[1]).sum().mean()[cols[14]], None)
 res["多年平均最大日降水量"] = (od1.groupby(cols[1]).max().mean()[cols[14]], None)
 shui_max_max = od1.groupby(cols[1]).max().max()[cols[14]]
-_raw = od1[od1[cols[14]] == shui_max_max]
-date = "{}年{}月{}日".format(_raw[cols[1]], _raw[cols[2]], _raw[cols[3]])
-res["最大一日降水量"] = (shui_max_max, date)
+dates = get_dates(14, shui_max_max)
+res["最大一日降水量"] = (shui_max_max, dates)
 res["多年极大风速"] = (od1.groupby(cols[1]).max().mean()[cols[-9]], None)
 fensu_max_max = od1.groupby(cols[1]).max().max()[cols[-9]]
-_raw = od1[od1[cols[-9]] == fensu_max_max]
-date = "{}年{}月{}日".format(_raw[cols[1]], _raw[cols[2]], _raw[cols[3]])
-res["最大一日极大风速极值"] = (fensu_max_max, date)
-res["最大一日极大风速风向"] = (od1[od1[cols[-9]] == 28.0][cols[-8]], None)
+dates = get_dates(-9, fensu_max_max)
+res["最大一日极大风速极值"] = (fensu_max_max, dates)
+a = od1[od1[cols[-9]] == fensu_max_max][cols[-8]]
+res["最大一日极大风速风向"] = (a.iloc[0], None)
+
+data = []
+for key, value in res.items():
+    data.append((key, *value))
+
+
+pd.DataFrame(data, columns=indexs_table1).to_csv("table1.csv", encoding="gb18030", index=False)
