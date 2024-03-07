@@ -1,13 +1,17 @@
 from collections import namedtuple
 import pandas as pd
 import numpy as np
+import copy
+import sys
 
 Vrange = namedtuple("Vrange", ["lo", "hi"])
 ColIndex = namedtuple("ColIndex", ["icol", "col_name"])
 
-od = pd.read_csv("origin_data.csv", encoding="gb18030")
+od = pd.read_csv(sys.argv[1], encoding="gb18030")
 titles = od.columns
 od1 = od[(od[titles[0]]==55593)]
+od2 = od[(od[titles[0]]==57584)]
+raw_data = copy.deepcopy(od1)
 
 
 indexs_all = dict(
@@ -46,6 +50,14 @@ def is_col_value_in_range(icol, df):
     else:
         False
 
+def value_change(x):
+    if 32000 <= x < 33000:
+        return (x - 32000) * 0.1
+    elif 31000 <= x < 32000:
+        return (x - 31000) * 0.1
+    elif 30000 <= x < 31000:
+        return (x - 30000) * 0.1
+    
 def check_data_valid(df):
     passes = []
     faileds = []
@@ -62,5 +74,13 @@ def replace_invalid_by_nan(od):
         title = titles[icol]
         col = od[title]
         new = col.replace([32744, 32766], np.nan)
+        new = new.replace(32700, 0)
         od.loc[:, title] = new
     return od
+
+
+p, f = check_data_valid(od1)
+print(f)
+replace_invalid_by_nan(od1)
+p, f = check_data_valid(od1)
+print(f)
