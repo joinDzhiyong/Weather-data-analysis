@@ -1,10 +1,11 @@
+import sys
 import pandas as pd
+from prepare_data import PreResolver
 
-od = pd.read_csv("origin_data.csv", encoding="gb18030")
-cols = od.columns
-od1 = od[(od[cols[0]]==55593)]
-od2 = od[(od[cols[0]]==57584)]
-
+pr = PreResolver(sys.argv[1], 55593)
+pr.process_over_all()
+od1 = pr.data
+cols = od1.columns
 indexs_table1 = ["类型", "数值", "日期"]
 map1_table1 = {
 "多年平均年降水量": 14,	
