@@ -86,12 +86,11 @@ class PreResolver:
     def process_over_all(self):
         p, f = self.check_data_valid()
         print("before clean:")
-        print(p)
         print(f)
         self.replace_invalid_by_nan()
         p, f = self.check_data_valid()
+        assert not f
         print("after clean:")
-        print(p)
         print(f)
 
 
