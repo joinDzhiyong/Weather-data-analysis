@@ -9,12 +9,16 @@ ColIndex = namedtuple("ColIndex", ["icol", "col_name"])
 
 
 class PreResolver:
-    def __init__(self, data_file, n) -> None:
-        self.raw_data = pd.read_csv(data_file, encoding="gb18030")
-        self.data = copy.deepcopy(self.raw_data)
-        self.titles = self.raw_data.columns
-        self.data = self.data[(self.data.iloc[:, 0]==n)]
-        self.get_indexs()
+    def __init__(self, data_file) -> None:
+        self.data_fromcsv = pd.read_csv(data_file, encoding="gb18030")
+        self.titles = self.data_fromcsv.columns
+        self.station_nums = self.data_fromcsv.loc[:, self.titles[0]].unique()
+        self.indexs_all, self.icol_indexs, self.indexs_range = self.get_indexs()
+        data_all = copy.deepcopy(self.data_fromcsv)
+        self.datas = {}
+        for station_num in self.station_nums:
+            raw_data = data_all[(data_all.iloc[:, 0]==station_num)]
+            self.datas[station_num] = self.get_processed_pass_data(raw_data)
 
     def value_change(self, x:int):
         if 32000 <= x < 33000:
@@ -53,10 +57,11 @@ class PreResolver:
         day_hours_indexs = Vrange(0, 24),
         vaper_indexs = Vrange(0, 1000),
         )
+        return self.indexs_all, self.icol_indexs, self.indexs_range
 
 
-    def is_col_value_in_range(self, i):
-        col = self.data.iloc[:, i]
+    def is_col_value_in_range(self, i, raw_data):
+        col = raw_data.iloc[:, i]
         desc = col.describe()
         vrange = self.indexs_range[self.icol_indexs[i]]
         if vrange.lo <= desc["min"] and desc["max"] <= vrange.hi:
@@ -64,38 +69,37 @@ class PreResolver:
         else:
             False
     
-    def check_data_valid(self):
+    def check_data_valid(self, raw_data):
         passes = []
         faileds = []
         for _, d in self.indexs_all.items():
             for i, col_name in d.items():
-                if self.is_col_value_in_range(i):
+                if self.is_col_value_in_range(i, raw_data):
                     passes.append(ColIndex(i, col_name))
                 else:
                     faileds.append(ColIndex(i, col_name))
         return passes, faileds
 
-    def replace_invalid_by_nan(self):
+    def replace_invalid_by_nan(self, raw_data):
         for i in range(4, self.titles.size):
-            col = self.data.iloc[:, i]
+            col = raw_data.iloc[:, i]
             col.replace([32744, 32766], np.nan, inplace=True)
             col.replace(32700, 0, inplace=True)
             new = col.map(self.value_change, 'ignore')
-            self.data.iloc[:, i] = new
+            raw_data.iloc[:, i] = new
+        return raw_data
     
-    def process_over_all(self):
-        p, f = self.check_data_valid()
+    def get_processed_pass_data(self, raw_data: pd.DataFrame):
+        p, f = self.check_data_valid(raw_data)
         print("before clean:")
         print(f)
-        self.replace_invalid_by_nan()
-        p, f = self.check_data_valid()
+        data = self.replace_invalid_by_nan(raw_data)
+        p, f = self.check_data_valid(raw_data)
         assert not f
         print("after clean:")
         print(f)
+        return data
 
 
 if __name__ == "__main__":
-    prsr = PreResolver(sys.argv[1], 55593)
-    prsr1 = PreResolver(sys.argv[1], 57584)
-    # od1 = od[(od[titles[0]]==55593)]
-    # od2 = od[(od[titles[0]]==57584)]
+    prsr = PreResolver(sys.argv[1])

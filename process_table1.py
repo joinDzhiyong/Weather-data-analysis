@@ -22,7 +22,7 @@ map1_table1.update(map1_table1_mean_mean)
 class ProcesserTable1:
     def __init__(self, df: pd.DataFrame) -> None:
         self.data = df
-        self.table_content = []
+        self.table_content = self.get_table1_data()
 
     def get_dates(self, i, value):
         df = self.data
@@ -60,8 +60,10 @@ class ProcesserTable1:
         assert a.index.size == 1
         res["最大一日极大风速风向"] = (a.loc[a.index[0], cols[-8]], None)
 
+        table_content = []
         for key, value in res.items():
-            self.table_content.append((key, *value))
+            table_content.append((key, *value))
+        return table_content
     
     def to_csv(self, to, encoding="gb18030"):
         df = pd.DataFrame(self.table_content, columns=indexs_table1)
